@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type requestPackage struct {
@@ -39,20 +41,25 @@ type BisectionData struct {
 }
 
 type FixedPointData struct {
-	Function     string   // This is the main function f(x)
+	Function            string   // This is the main function f(x)
 	RearrangedFunctions []string // Array of rearranged functions (can be one or more)
-	InitialValue float64  // Starting value x0
+	InitialValue        float64  // Starting value x0
 }
-
 
 type SecantData struct {
 	Function      string
 	InitialValue1 float64
-	InitialValue2 float64}
+	InitialValue2 float64
+}
 
 type FalsePositionData struct {
 	Function string
 	Interval [2]float64
+}
+
+type GaussianData struct {
+	Matrix [][]float64
+	Vector []float64
 }
 
 /*
@@ -83,16 +90,16 @@ func main() {
 		fmt.Println("5. Newton (Newton's Method)")
 		fmt.Println("6. Secante (Secant Method)")
 		fmt.Println("7. Raíces múltiples (Multiple Roots)")
+		fmt.Println("8. Eliminación Gaussiana Simple (Simple Gaussian Elimination)")
+		fmt.Println("9. Eliminación Gaussiana con Pivoteo Parcial (Partial Pivoting)")
+		fmt.Println("10. Eliminación Gaussiana con Pivoteo Total (Full Pivoting)")
+
 		choice := getIntInput(reader, "Enter the number of your choice: ")
 		switch taskChoice {
 		case 1:
-			fmt.Println("It entered case 1")
 			getTestPackage(&req, choice)
-			break
 		case 2:
-			fmt.Println("It entered case 2")
 			buildPackage(reader, &req, choice)
-			break
 		default:
 			fmt.Println("The number entered is not a valid choice.")
 			continue
@@ -107,12 +114,11 @@ func main() {
 	}
 }
 
-
-
 func buildPackage(reader *bufio.Reader, req *requestPackage, choice int) {
 	req.MaxIterations = getIntInput(reader, "Enter the maximum number of iterations: ")
 	req.Tolerance = getFloatInput(reader, "Enter the tolerance: ")
-	req.TypeOfError = getIntInput(reader, "Enter the type of error (1 for absolute error, 2 for percentage error): ") // Switch statement to handle user's choice and function-specific data
+	req.TypeOfError = getIntInput(reader, "Enter the type of error (1 for absolute error, 2 for percentage error): ")
+
 	switch choice {
 	case 1:
 		fmt.Println("You chose Búsquedas (Searches).")
@@ -124,6 +130,7 @@ func buildPackage(reader *bufio.Reader, req *requestPackage, choice int) {
 	case 3:
 		fmt.Println("You chose Regla falsa (False Position).")
 		req.TypeOfFunction = "FAL"
+		req.FunctionData = collectFalsePositionData(reader)
 	case 4:
 		fmt.Println("You chose Punto fijo (Fixed Point).")
 		req.TypeOfFunction = "PUN"
@@ -140,13 +147,50 @@ func buildPackage(reader *bufio.Reader, req *requestPackage, choice int) {
 		fmt.Println("You chose Raíces múltiples (Multiple Roots).")
 		req.TypeOfFunction = "MUL"
 		req.FunctionData = collectMultipleRootsData(reader)
+	case 8:
+		fmt.Println("You chose Simple Gaussian Elimination.")
+		req.TypeOfFunction = "SIM"
+		req.FunctionData = collectGaussianData(reader)
+	case 9:
+		fmt.Println("You chose Gaussian Elimination with Partial Pivoting.")
+		req.TypeOfFunction = "PIVP"
+		req.FunctionData = collectGaussianData(reader)
+	case 10:
+		fmt.Println("You chose Gaussian Elimination with Full Pivoting.")
+		req.TypeOfFunction = "PIVF"
+		req.FunctionData = collectGaussianData(reader)
 	default:
-		fmt.Println("Invalid choice, please select a number between 1 and 7.")
+		fmt.Println("Invalid choice, please select a valid number.")
 		return
 	}
+}
 
-	// Call the central iteration function
+func collectGaussianData(reader *bufio.Reader) GaussianData {
+	size := getIntInput(reader, "Enter the size of the matrix (n x n): ")
+	A := make([][]float64, size)
+	b := make([]float64, size)
 
+	for i := 0; i < size; i++ {
+		fmt.Printf("Enter row %d of matrix A (space-separated values):\n", i+1)
+		rowInput := getStringInput(reader, "")
+		rowValues := strings.Fields(rowInput)
+		A[i] = make([]float64, size)
+		for j, value := range rowValues {
+			A[i][j], _ = strconv.ParseFloat(value, 64)
+		}
+	}
+
+	fmt.Println("Enter the vector b (space-separated values):")
+	bInput := getStringInput(reader, "")
+	bValues := strings.Fields(bInput)
+	for i, value := range bValues {
+		b[i], _ = strconv.ParseFloat(value, 64)
+	}
+
+	return GaussianData{
+		Matrix: A,
+		Vector: b,
+	}
 }
 
 // Helper function to collect Newton's method data
@@ -205,5 +249,21 @@ func collectSecantData(reader *bufio.Reader) SecantData {
 		Function:      function,
 		InitialValue1: initialValue1,
 		InitialValue2: initialValue2,
+	}
+}
+
+func collectFalsePositionData(reader *bufio.Reader) FalsePositionData {
+	// Collect the function as a string
+	function := getStringInput(reader, "Enter the function (in terms of x): ")
+
+	// Collect the interval [a, b]
+	fmt.Println("Enter the interval:")
+	a := getFloatInput(reader, "Enter the lower bound (a): ")
+	b := getFloatInput(reader, "Enter the upper bound (b): ")
+
+	// Return the collected data
+	return FalsePositionData{
+		Function: function,
+		Interval: [2]float64{a, b},
 	}
 }

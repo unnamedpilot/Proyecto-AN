@@ -6,7 +6,6 @@ import (
 	"math"
 )
 
-// Central iteration function
 func iterateNumericMethod(req requestPackage) (float64, error) {
 	switch req.TypeOfFunction {
 	case "PUN":
@@ -40,11 +39,19 @@ func iterateNumericMethod(req requestPackage) (float64, error) {
 	case "MUL":
 		data := req.FunctionData.(MultipleRootsData)
 		return iterateMultipleRootsMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
+	case "SIM":
+		data := req.FunctionData.(GaussianData)
+		return iterateSimpleGaussianEliminationMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
+	case "PIVP":
+		data := req.FunctionData.(GaussianData)
+		return iteratePartialPivotMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
+	case "PIVF":
+		data := req.FunctionData.(GaussianData)
+		return iterateFullPivotMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
 	default:
 		return 0, fmt.Errorf("unknown method")
 	}
 }
-
 
 func iterateFixedPointMethod(data FixedPointData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
 	x := data.InitialValue
@@ -77,7 +84,7 @@ func iterateFixedPointMethod(data FixedPointData, maxIterations int, tolerance f
 			}
 
 			// Display iteration info
-			fmt.Printf("Iteration %d: x = %.11f, f(x) = %.11f, g(x) = %.11f, Error = %.11f\n", i+1, x, fx, newX, errorValue)
+			fmt.Printf("Iteration %d: x = %.11f, f(x) = %.11f, g(x) = %.11f, Error = %.1f\n", i+1, x, fx, newX, errorValue)
 
 			// Check for convergence
 			if errorValue < tolerance {
@@ -94,7 +101,6 @@ func iterateFixedPointMethod(data FixedPointData, maxIterations int, tolerance f
 	return 0, fmt.Errorf("method did not converge after %d iterations", maxIterations)
 }
 
-
 func iterateFalsePositionMethod(data FalsePositionData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
 	a := data.Interval[0]
 	b := data.Interval[1]
@@ -110,7 +116,7 @@ func iterateFalsePositionMethod(data FalsePositionData, maxIterations int, toler
 			return 0, err
 		}
 
-		newX := b - (fb * (b - a)) / (fb - fa)
+		newX := b - (fb*(b-a))/(fb-fa)
 
 		fc, err := evaluateFunction(data.Function, newX)
 		if err != nil {
@@ -124,7 +130,7 @@ func iterateFalsePositionMethod(data FalsePositionData, maxIterations int, toler
 			errorValue = tolerance + 1
 		}
 
-		fmt.Printf("Iteration %d: a = %.11f, b = %.11f, c = %.11f, f(c) = %.11f, Error = %.11f\n", i+1, a, b, newX, fc, errorValue)
+		fmt.Printf("Iteration %d: a = %.11f, b = %.11f, c = %.11f, f(c) = %.11f, Error = %.1f\n", i+1, a, b, newX, fc, errorValue)
 
 		if errorValue < tolerance {
 			fmt.Printf("Converged after %d iterations\n", i+1)
@@ -143,8 +149,7 @@ func iterateFalsePositionMethod(data FalsePositionData, maxIterations int, toler
 	return 0, fmt.Errorf("method did not converge after %d iterations", maxIterations)
 }
 
-
-func iterateSearchMethod(data SearchData, maxIterations int, tolerance float64, typeOfError int) (error){
+func iterateSearchMethod(data SearchData, maxIterations int, tolerance float64, typeOfError int) error {
 	x := data.InitialValue
 	delta := data.Delta
 	var previousFx float64
@@ -155,18 +160,17 @@ func iterateSearchMethod(data SearchData, maxIterations int, tolerance float64, 
 		if err != nil {
 			return err
 		}
-		if fx * previousFx < 0 {
+		if fx*previousFx < 0 {
 			fmt.Printf("Iteration %d: x = %g, f(x) = %g, There is a root between %g and %g\n", i, x, fx, previousX, x)
 		} else {
 			fmt.Printf("Iteration %d: x = %g, f(x) = %g\n", i, x, fx)
 		}
 		previousFx = fx
 		previousX = x
-		x = x+delta
+		x = x + delta
 	}
 	return nil
 }
-
 
 func iterateNewtonMethod(data NewtonData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
 	x := data.InitialValue
@@ -206,7 +210,6 @@ func iterateNewtonMethod(data NewtonData, maxIterations int, tolerance float64, 
 
 	return 0, fmt.Errorf("method did not converge after %d iterations", maxIterations)
 }
-
 
 func iterateBisectionMethod(data BisectionData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
 	a := data.Interval[0]
@@ -251,11 +254,9 @@ func iterateBisectionMethod(data BisectionData, maxIterations int, tolerance flo
 	return 0, fmt.Errorf("method did not converge after %d iterations", maxIterations)
 }
 
-
 func iterateSecantMethod(data SecantData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
 	x0 := data.InitialValue1
 	x1 := data.InitialValue2
-
 
 	for i := 0; i < maxIterations; i++ {
 		fx0, err := evaluateFunction(data.Function, x0)
@@ -269,10 +270,10 @@ func iterateSecantMethod(data SecantData, maxIterations int, tolerance float64, 
 		}
 
 		if i == 0 {
-			fmt.Printf("Iteration %d: x = %g, f(x) = %g\n", 0,x0,fx0)
-			fmt.Printf("Iteration %d: x = %g, f(x) = %g\n", 1,x1,fx1)
-		} else{
-			errorValue := calculateError(x1,x0,typeOfError)
+			fmt.Printf("Iteration %d: x = %g, f(x) = %g\n", 0, x0, fx0)
+			fmt.Printf("Iteration %d: x = %g, f(x) = %g\n", 1, x1, fx1)
+		} else {
+			errorValue := calculateError(x1, x0, typeOfError)
 			fmt.Printf("Iteration %d: x = %g, f(x) = %g, error = %g\n", i+1, x1, fx1, errorValue)
 		}
 
@@ -290,7 +291,6 @@ func iterateSecantMethod(data SecantData, maxIterations int, tolerance float64, 
 
 	return 0, fmt.Errorf("method did not converge after %d iterations", maxIterations)
 }
-
 
 func iterateMultipleRootsMethod(data MultipleRootsData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
 	x := data.InitialValue
@@ -311,8 +311,7 @@ func iterateMultipleRootsMethod(data MultipleRootsData, maxIterations int, toler
 		if err != nil {
 			return 0, err
 		}
-		errorValue := calculateError(newX,x,typeOfError)
-
+		errorValue := calculateError(newX, x, typeOfError)
 
 		// Multiple Roots formula: x_new = x - (f(x) * f'(x)) / ((f'(x))^2 - f(x) * f''(x))
 		newX = x - (fx*dfx)/((dfx*dfx)-(fx*d2fx))
@@ -330,36 +329,60 @@ func iterateMultipleRootsMethod(data MultipleRootsData, maxIterations int, toler
 	return 0, fmt.Errorf("method did not converge after %d iterations", maxIterations)
 }
 
-// Custom pow function to register with govaluate
+func gaussianElimination(A [][]float64, b []float64) []float64 {
+	n := len(A)
+
+	// Forward elimination
+	for k := 0; k < n-1; k++ {
+		for i := k + 1; i < n; i++ {
+			factor := A[i][k] / A[k][k]
+			for j := k; j < n; j++ {
+				A[i][j] = A[i][j] - factor*A[k][j]
+			}
+			b[i] = b[i] - factor*b[k]
+		}
+	}
+
+	// Backward substitution
+	x := make([]float64, n)
+	for i := n - 1; i >= 0; i-- {
+		sum := 0.0
+		for j := i + 1; j < n; j++ {
+			sum += A[i][j] * x[j]
+		}
+		x[i] = (b[i] - sum) / A[i][i]
+	}
+
+	return x
+}
+
 func customFunctions() map[string]govaluate.ExpressionFunction {
-	//This is a map where the key is mapping to an anonymous function
-	functions := map[string]govaluate.ExpressionFunction {
+	functions := map[string]govaluate.ExpressionFunction{
 		"pow": func(args ...interface{}) (interface{}, error) {
 			base := args[0].(float64)
 			exponent := args[1].(float64)
 			return math.Pow(base, exponent), nil
 		},
-		"exp" : func(args ...interface{}) (interface{}, error) {
-			exponent:= args[0].(float64)
+		"exp": func(args ...interface{}) (interface{}, error) {
+			exponent := args[0].(float64)
 			return math.Exp(exponent), nil
 		},
-		"ln" : func(args ...interface{}) (interface{}, error) {
-			x:= args[0].(float64)
+		"ln": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
 			return math.Log(x), nil
 		},
-		"sin" : func(args ...interface{}) (interface{}, error) {
-			x:= args[0].(float64)
+		"sin": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
 			return math.Sin(x), nil
 		},
-		"cos" : func(args ...interface{}) (interface{}, error) {
-			x:= args[0].(float64)
+		"cos": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
 			return math.Cos(x), nil
 		},
 	}
 	return functions
 }
 
-// Evaluate function with custom pow function
 func evaluateFunction(functionStr string, x float64) (float64, error) {
 	processedFunctionStr := preprocessExpression(functionStr)
 
@@ -379,7 +402,6 @@ func evaluateFunction(functionStr string, x float64) (float64, error) {
 	return result.(float64), nil
 }
 
-// Evaluate Newton's method (specific to Newton's formula)
 func evaluateNewton(functionStr string, derivativeStr string, x float64) (float64, error) {
 	fx, err := evaluateFunction(functionStr, x)
 	if err != nil {
@@ -391,20 +413,136 @@ func evaluateNewton(functionStr string, derivativeStr string, x float64) (float6
 		return 0, err
 	}
 
-
 	if dfx == 0 {
 		return 0, fmt.Errorf("derivative is zero at x = %.11f, cannot proceed with division", x)
 	}
 
-	newX := x - fx / dfx
+	newX := x - fx/dfx
 	return newX, nil
 }
+func iterateSimpleGaussianEliminationMethod(data GaussianData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
+	A := data.Matrix
+	b := data.Vector
+	n := len(A)
 
-
-// Helper function for absolute value
-func abs(a float64) float64 {
-	if a < 0 {
-		return -a
+	// Forward elimination
+	for k := 0; k < n-1; k++ {
+		for i := k + 1; i < n; i++ {
+			factor := A[i][k] / A[k][k]
+			for j := k; j < n; j++ {
+				A[i][j] = A[i][j] - factor*A[k][j]
+			}
+			b[i] = b[i] - factor*b[k]
+		}
 	}
-	return a
+
+	// Backward substitution
+	x := make([]float64, n)
+	for i := n - 1; i >= 0; i-- {
+		sum := 0.0
+		for j := i + 1; j < n; j++ {
+			sum += A[i][j] * x[j]
+		}
+		x[i] = (b[i] - sum) / A[i][i]
+	}
+
+	return x[0], nil
+}
+
+func iteratePartialPivotMethod(data GaussianData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
+	A := data.Matrix
+	b := data.Vector
+	n := len(A)
+	var _ float64
+
+	// Forward elimination with partial pivoting
+	for k := 0; k < n-1; k++ {
+		// Find the row with the largest pivot element in column k
+		maxIndex := k
+		for i := k + 1; i < n; i++ {
+			if abs(A[i][k]) > abs(A[maxIndex][k]) {
+				maxIndex = i
+			}
+		}
+		// Swap rows in both A and b
+		A[k], A[maxIndex] = A[maxIndex], A[k]
+		b[k], b[maxIndex] = b[maxIndex], b[k]
+
+		for i := k + 1; i < n; i++ {
+			factor := A[i][k] / A[k][k]
+			for j := k; j < n; j++ {
+				A[i][j] = A[i][j] - factor*A[k][j]
+			}
+			b[i] = b[i] - factor*b[k]
+		}
+	}
+
+	// Backward substitution
+	x := make([]float64, n)
+	for i := n - 1; i >= 0; i-- {
+		sum := 0.0
+		for j := i + 1; j < n; j++ {
+			sum += A[i][j] * x[j]
+		}
+		x[i] = (b[i] - sum) / A[i][i]
+	}
+
+	return x[0], nil
+}
+
+func iterateFullPivotMethod(data GaussianData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
+	A := data.Matrix
+	b := data.Vector
+	n := len(A)
+	// Track column swaps
+	columnSwap := make([]int, n)
+	for i := range columnSwap {
+		columnSwap[i] = i
+	}
+
+	// Forward elimination with full pivoting
+	for k := 0; k < n-1; k++ {
+		// Find the largest pivot element in the submatrix
+		maxRow, maxCol := k, k
+		for i := k; i < n; i++ {
+			for j := k; j < n; j++ {
+				if abs(A[i][j]) > abs(A[maxRow][maxCol]) {
+					maxRow, maxCol = i, j
+				}
+			}
+		}
+		// Swap rows and columns
+		A[k], A[maxRow] = A[maxRow], A[k]
+		for i := 0; i < n; i++ {
+			A[i][k], A[i][maxCol] = A[i][maxCol], A[i][k]
+		}
+		b[k], b[maxRow] = b[maxRow], b[k]
+		columnSwap[k], columnSwap[maxCol] = columnSwap[maxCol], columnSwap[k]
+
+		for i := k + 1; i < n; i++ {
+			factor := A[i][k] / A[k][k]
+			for j := k; j < n; j++ {
+				A[i][j] = A[i][j] - factor*A[k][j]
+			}
+			b[i] = b[i] - factor*b[k]
+		}
+	}
+
+	// Backward substitution
+	x := make([]float64, n)
+	for i := n - 1; i >= 0; i-- {
+		sum := 0.0
+		for j := i + 1; j < n; j++ {
+			sum += A[i][j] * x[j]
+		}
+		x[i] = (b[i] - sum) / A[i][i]
+	}
+
+	// Adjust solution based on column swaps
+	finalX := make([]float64, n)
+	for i := 0; i < n; i++ {
+		finalX[columnSwap[i]] = x[i]
+	}
+
+	return finalX[0], nil
 }

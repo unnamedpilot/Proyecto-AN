@@ -7,8 +7,9 @@ import (
 
 /*
 Issue
+
 	Considering the actual flow, there would be two differents test methods
- */
+*/
 func getTestPackage(req *requestPackage, choice int) {
 	req.MaxIterations = 100
 	req.Tolerance = math.Pow10(-7)
@@ -43,11 +44,34 @@ func getTestPackage(req *requestPackage, choice int) {
 		fmt.Println("You chose Raíces múltiples (Multiple Roots).")
 		req.TypeOfFunction = "MUL"
 		req.FunctionData = getTestMultipleRootsData()
+	case 8:
+		fmt.Println("You chose Simple Gaussian Elimination.")
+		req.TypeOfFunction = "SIM"
+		req.FunctionData = getTestGaussianEliminationData()
+	case 9:
+		fmt.Println("You chose Gaussian Elimination with Partial Pivoting.")
+		req.TypeOfFunction = "PIVP"
+		req.FunctionData = getTestGaussianEliminationData()
+	case 10:
+		fmt.Println("You chose Gaussian Elimination with Full Pivoting.")
+		req.TypeOfFunction = "PIVF"
+		req.FunctionData = getTestGaussianEliminationData()
 	default:
-		fmt.Println("Invalid choice, please select a number between 1 and 7.")
+		fmt.Println("Invalid choice, please select a valid number.")
 		return
 	}
-	return
+}
+
+func getTestGaussianEliminationData() GaussianEliminationData {
+	return GaussianEliminationData{
+		Matrix: [][]float64{
+			{2, -1, 0, 3},
+			{1, 0.5, 3, 8},
+			{0, 13, -2, 11},
+			{14, 5, -2, 3},
+		},
+		Vector: []float64{1, 1, 1, 1},
+	}
 }
 
 func getTestResult(req requestPackage) {
@@ -57,49 +81,47 @@ func getTestResult(req requestPackage) {
 // VALIDADO
 func getTestNewtonData() NewtonData {
 	return NewtonData{
-			Function:     "ln(sin(x)^2 + 1) - 1/2",  // f(x)
-		Derivative:   "2*(sin(x)^2 + 1)^(-1)*sin(x)*cos(x)",  // f'(x)
-		InitialValue: 0.5,  // x0
+		Function:     "ln(sin(x)^2 + 1) - 1/2",              // f(x)
+		Derivative:   "2*(sin(x)^2 + 1)^(-1)*sin(x)*cos(x)", // f'(x)
+		InitialValue: 0.5,                                   // x0
 	}
 }
-
 
 // VALIDADO
 func getTestMultipleRootsData() MultipleRootsData {
 	return MultipleRootsData{
-		Function:         "exp(x) - x - 1",  // h(x)
-		FirstDerivative:  "exp(x) - 1",      // h'(x)
-		SecondDerivative: "exp(x)",          // h''(x)
-		InitialValue:     1.0,               // x0
+		Function:         "exp(x) - x - 1", // h(x)
+		FirstDerivative:  "exp(x) - 1",     // h'(x)
+		SecondDerivative: "exp(x)",         // h''(x)
+		InitialValue:     1.0,              // x0
 	}
 }
-
 
 // VALIDADO
 func getTestBisectionData() BisectionData {
 	return BisectionData{
-		Function: "ln(sin(x)^2 + 1) - 1/2",  // f(x)
-		Interval: [2]float64{0, 1},          // Interval [a, b]
+		Function: "ln(sin(x)^2 + 1) - 1/2", // f(x)
+		Interval: [2]float64{0, 1},         // Interval [a, b]
 	}
 }
 
 // VALIDADO
 func getTestFixedPointData() FixedPointData {
 	return FixedPointData{
-		Function: "ln(sin(x)^2 + 1) - 1/2 - x",  // f1(x)
+		Function: "ln(sin(x)^2 + 1) - 1/2 - x", // f1(x)
 		RearrangedFunctions: []string{
-			"ln(sin(x)^2 + 1) - 1/2",  // g(x)
+			"ln(sin(x)^2 + 1) - 1/2", // g(x)
 		},
-		InitialValue: -0.5,  // x0
+		InitialValue: -0.5, // x0
 	}
 }
 
 // VALIDADA
 func getTestSecantData() SecantData {
 	return SecantData{
-		Function:      "ln(sin(x)^2+1)-1/2",  // f(x)
-		InitialValue1: 0.5,               // x0
-		InitialValue2: 1.0,               // x1
+		Function:      "ln(sin(x)^2+1)-1/2", // f(x)
+		InitialValue1: 0.5,                  // x0
+		InitialValue2: 1.0,                  // x1
 	}
 }
 
@@ -107,15 +129,14 @@ func getTestSecantData() SecantData {
 func getTestSearchData() SearchData {
 	return SearchData{
 		InitialValue: -3,
-		Function: "ln(sin(x)^2 + 1) - 1/2",
-		Delta: 0.5,
+		Function:     "ln(sin(x)^2 + 1) - 1/2",
+		Delta:        0.5,
 	}
 }
 
-
 func getTestFalsePositionData() FalsePositionData {
 	return FalsePositionData{
-		Function: "ln(sin(x)^2 + 1) - 1/2",  // f(x)
-		Interval: [2]float64{0, 1},          // Interval [a, b]
+		Function: "ln(sin(x)^2 + 1) - 1/2", // f(x)
+		Interval: [2]float64{0, 1},         // Interval [a, b]
 	}
 }

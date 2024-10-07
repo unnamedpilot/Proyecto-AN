@@ -1,12 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"math"
 )
 
-func iterateNumericMethod(req requestPackage) (float64, error) {
+func iterateNumericMethod(req requestPackage) (interface{}, error) {
 	switch req.TypeOfFunction {
 	case "PUN":
 		data := req.FunctionData.(FixedPointData)
@@ -40,13 +41,13 @@ func iterateNumericMethod(req requestPackage) (float64, error) {
 		data := req.FunctionData.(MultipleRootsData)
 		return iterateMultipleRootsMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
 	case "SIM":
-		data := req.FunctionData.(GaussianData)
+		data := req.FunctionData.(GaussianEliminationData)
 		return iterateSimpleGaussianEliminationMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
 	case "PIVP":
-		data := req.FunctionData.(GaussianData)
+		data := req.FunctionData.(GaussianEliminationData)
 		return iteratePartialPivotMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
 	case "PIVF":
-		data := req.FunctionData.(GaussianData)
+		data := req.FunctionData.(GaussianEliminationData)
 		return iterateFullPivotMethod(data, req.MaxIterations, req.Tolerance, req.TypeOfError)
 	default:
 		return 0, fmt.Errorf("unknown method")
@@ -358,26 +359,85 @@ func gaussianElimination(A [][]float64, b []float64) []float64 {
 
 func customFunctions() map[string]govaluate.ExpressionFunction {
 	functions := map[string]govaluate.ExpressionFunction{
+		// Power function: pow(base, exponent)
 		"pow": func(args ...interface{}) (interface{}, error) {
 			base := args[0].(float64)
 			exponent := args[1].(float64)
 			return math.Pow(base, exponent), nil
 		},
+		// Exponential function: exp(x)
 		"exp": func(args ...interface{}) (interface{}, error) {
 			exponent := args[0].(float64)
 			return math.Exp(exponent), nil
 		},
+		// Natural logarithm: ln(x)
 		"ln": func(args ...interface{}) (interface{}, error) {
 			x := args[0].(float64)
+			if x <= 0 {
+				return nil, errors.New("ln(x) is undefined for x <= 0")
+			}
 			return math.Log(x), nil
 		},
+		// Logarithm base 10: log10(x)
+		"log10": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			if x <= 0 {
+				return nil, errors.New("log10(x) is undefined for x <= 0")
+			}
+			return math.Log10(x), nil
+		},
+		// Sine function: sin(x)
 		"sin": func(args ...interface{}) (interface{}, error) {
 			x := args[0].(float64)
 			return math.Sin(x), nil
 		},
+		// Cosine function: cos(x)
 		"cos": func(args ...interface{}) (interface{}, error) {
 			x := args[0].(float64)
 			return math.Cos(x), nil
+		},
+		// Tangent function: tan(x)
+		"tan": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			return math.Tan(x), nil
+		},
+		// Square root: sqrt(x)
+		"sqrt": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			if x < 0 {
+				return nil, errors.New("sqrt(x) is undefined for x < 0")
+			}
+			return math.Sqrt(x), nil
+		},
+		// Absolute value: abs(x)
+		"abs": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			return math.Abs(x), nil
+		},
+		// Ceiling function: ceil(x)
+		"ceil": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			return math.Ceil(x), nil
+		},
+		// Floor function: floor(x)
+		"floor": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			return math.Floor(x), nil
+		},
+		// Hyperbolic sine: sinh(x)
+		"sinh": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			return math.Sinh(x), nil
+		},
+		// Hyperbolic cosine: cosh(x)
+		"cosh": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			return math.Cosh(x), nil
+		},
+		// Hyperbolic tangent: tanh(x)
+		"tanh": func(args ...interface{}) (interface{}, error) {
+			x := args[0].(float64)
+			return math.Tanh(x), nil
 		},
 	}
 	return functions
@@ -420,10 +480,14 @@ func evaluateNewton(functionStr string, derivativeStr string, x float64) (float6
 	newX := x - fx/dfx
 	return newX, nil
 }
-func iterateSimpleGaussianEliminationMethod(data GaussianData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
+func iterateSimpleGaussianEliminationMethod(data GaussianEliminationData, maxIterations int, tolerance float64, typeOfError int) ([]float64, error) {
 	A := data.Matrix
 	b := data.Vector
 	n := len(A)
+
+	// Print the initial matrix and vector
+	fmt.Println("Etapa 0")
+	printMatrixAndVector(A, b)
 
 	// Forward elimination
 	for k := 0; k < n-1; k++ {
@@ -434,6 +498,9 @@ func iterateSimpleGaussianEliminationMethod(data GaussianData, maxIterations int
 			}
 			b[i] = b[i] - factor*b[k]
 		}
+		// Print the matrix and vector after each stage
+		fmt.Printf("Etapa %d\n", k+1)
+		printMatrixAndVector(A, b)
 	}
 
 	// Backward substitution
@@ -446,21 +513,24 @@ func iterateSimpleGaussianEliminationMethod(data GaussianData, maxIterations int
 		x[i] = (b[i] - sum) / A[i][i]
 	}
 
-	return x[0], nil
+	return x, nil
 }
 
-func iteratePartialPivotMethod(data GaussianData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
+func iteratePartialPivotMethod(data GaussianEliminationData, maxIterations int, tolerance float64, typeOfError int) ([]float64, error) {
 	A := data.Matrix
 	b := data.Vector
 	n := len(A)
-	var _ float64
+
+	// Print the initial matrix and vector
+	fmt.Println("Etapa 0")
+	printMatrixAndVector(A, b)
 
 	// Forward elimination with partial pivoting
 	for k := 0; k < n-1; k++ {
 		// Find the row with the largest pivot element in column k
 		maxIndex := k
 		for i := k + 1; i < n; i++ {
-			if abs(A[i][k]) > abs(A[maxIndex][k]) {
+			if math.Abs(A[i][k]) > math.Abs(A[maxIndex][k]) {
 				maxIndex = i
 			}
 		}
@@ -475,6 +545,9 @@ func iteratePartialPivotMethod(data GaussianData, maxIterations int, tolerance f
 			}
 			b[i] = b[i] - factor*b[k]
 		}
+		// Print the matrix and vector after each stage
+		fmt.Printf("Etapa %d\n", k+1)
+		printMatrixAndVector(A, b)
 	}
 
 	// Backward substitution
@@ -487,10 +560,10 @@ func iteratePartialPivotMethod(data GaussianData, maxIterations int, tolerance f
 		x[i] = (b[i] - sum) / A[i][i]
 	}
 
-	return x[0], nil
+	return x, nil
 }
 
-func iterateFullPivotMethod(data GaussianData, maxIterations int, tolerance float64, typeOfError int) (float64, error) {
+func iterateFullPivotMethod(data GaussianEliminationData, maxIterations int, tolerance float64, typeOfError int) ([]float64, error) {
 	A := data.Matrix
 	b := data.Vector
 	n := len(A)
@@ -500,13 +573,17 @@ func iterateFullPivotMethod(data GaussianData, maxIterations int, tolerance floa
 		columnSwap[i] = i
 	}
 
+	// Print the initial matrix and vector
+	fmt.Println("Etapa 0")
+	printMatrixAndVector(A, b)
+
 	// Forward elimination with full pivoting
 	for k := 0; k < n-1; k++ {
 		// Find the largest pivot element in the submatrix
 		maxRow, maxCol := k, k
 		for i := k; i < n; i++ {
 			for j := k; j < n; j++ {
-				if abs(A[i][j]) > abs(A[maxRow][maxCol]) {
+				if math.Abs(A[i][j]) > math.Abs(A[maxRow][maxCol]) {
 					maxRow, maxCol = i, j
 				}
 			}
@@ -526,6 +603,9 @@ func iterateFullPivotMethod(data GaussianData, maxIterations int, tolerance floa
 			}
 			b[i] = b[i] - factor*b[k]
 		}
+		// Print the matrix and vector after each stage
+		fmt.Printf("Etapa %d\n", k+1)
+		printMatrixAndVector(A, b)
 	}
 
 	// Backward substitution
@@ -544,5 +624,5 @@ func iterateFullPivotMethod(data GaussianData, maxIterations int, tolerance floa
 		finalX[columnSwap[i]] = x[i]
 	}
 
-	return finalX[0], nil
+	return finalX, nil
 }

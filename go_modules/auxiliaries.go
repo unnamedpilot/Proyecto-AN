@@ -44,3 +44,15 @@ func abs(a float64) float64 {
 	}
 	return a
 }
+
+// Helper function to print the matrix and vector
+func printMatrixAndVector(A [][]float64, b []float64) {
+	n := len(A)
+	for i := 0; i < n; i++ {
+		for j := 0; j < len(A[i]); j++ {
+			fmt.Printf("%f ", A[i][j])
+		}
+		fmt.Printf(" | %f\n", b[i])
+	}
+	fmt.Println()
+}

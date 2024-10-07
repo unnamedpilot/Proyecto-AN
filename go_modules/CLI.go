@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 )
 
 type requestPackage struct {
@@ -57,7 +55,7 @@ type FalsePositionData struct {
 	Interval [2]float64
 }
 
-type GaussianData struct {
+type GaussianEliminationData struct {
 	Matrix [][]float64
 	Vector []float64
 }
@@ -109,7 +107,14 @@ func main() {
 		if err != nil {
 			fmt.Println("Error:", err)
 		} else {
-			fmt.Printf("Result: %.16f\n", result)
+			switch v := result.(type) {
+			case float64:
+				fmt.Println("Single result:", v)
+			case []float64:
+				fmt.Println("Array result:", v)
+			default:
+				fmt.Println("Unknown result type")
+			}
 		}
 	}
 }
@@ -165,31 +170,27 @@ func buildPackage(reader *bufio.Reader, req *requestPackage, choice int) {
 	}
 }
 
-func collectGaussianData(reader *bufio.Reader) GaussianData {
-	size := getIntInput(reader, "Enter the size of the matrix (n x n): ")
-	A := make([][]float64, size)
-	b := make([]float64, size)
+func collectGaussianData(reader *bufio.Reader) GaussianEliminationData {
+	matrixSize := getIntInput(reader, "Enter the size of the matrix (n for an n x n matrix): ")
 
-	for i := 0; i < size; i++ {
-		fmt.Printf("Enter row %d of matrix A (space-separated values):\n", i+1)
-		rowInput := getStringInput(reader, "")
-		rowValues := strings.Fields(rowInput)
-		A[i] = make([]float64, size)
-		for j, value := range rowValues {
-			A[i][j], _ = strconv.ParseFloat(value, 64)
+	// Collect matrix elements
+	matrix := make([][]float64, matrixSize)
+	for i := 0; i < matrixSize; i++ {
+		matrix[i] = make([]float64, matrixSize)
+		for j := 0; j < matrixSize; j++ {
+			matrix[i][j] = getFloatInput(reader, fmt.Sprintf("Enter element [%d][%d] of the matrix: ", i, j))
 		}
 	}
 
-	fmt.Println("Enter the vector b (space-separated values):")
-	bInput := getStringInput(reader, "")
-	bValues := strings.Fields(bInput)
-	for i, value := range bValues {
-		b[i], _ = strconv.ParseFloat(value, 64)
+	// Collect the right-hand side vector
+	vector := make([]float64, matrixSize)
+	for i := 0; i < matrixSize; i++ {
+		vector[i] = getFloatInput(reader, fmt.Sprintf("Enter element [%d] of the vector: ", i))
 	}
 
-	return GaussianData{
-		Matrix: A,
-		Vector: b,
+	return GaussianEliminationData{
+		Matrix: matrix,
+		Vector: vector,
 	}
 }
 

@@ -29,11 +29,18 @@ func getStringInput(reader *bufio.Reader, prompt string) (input string) {
 	return
 }
 
-func calculateError(value float64, previousValue float64, typeOfError int) float64{
+func calculateError(value float64, previousValue float64, typeOfError int) float64 {
 	//Absolute error
-	if typeOfError == 1{
+	if typeOfError == 1 {
 		return abs(value - previousValue)
-	}else{
-		return abs((value - previousValue)/value)*100
+	} else {
+		return abs((value-previousValue)/value) * 100
 	}
+}
+
+func abs(a float64) float64 {
+	if a < 0 {
+		return -a
+	}
+	return a
 }
